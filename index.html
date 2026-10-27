@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>친구무스메 더비</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>친구무스메 <em>더비</em></h1>
+      <p>모두 같은 능력치로 2000m를 달려요. 스킬은 매 레이스 추첨이고, 결과는 순수하게 운이에요.</p>
+    </div>
+    <div class="board" aria-label="전광판">
+      <div class="cell"><div class="k">RACE</div><div class="v title" id="bRace">-</div></div>
+      <div class="cell"><div class="k">WEATHER</div><div class="v" id="bCourse">-</div></div>
+      <div class="cell"><div class="k">TIME</div><div class="v" id="bTime">0:00.0</div></div>
+      <div class="cell"><div class="k">TO GO</div><div class="v" id="bLeft">-</div></div>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="stage">
+      <div class="controls">
+        <div class="seg mode" role="group" aria-label="당첨 방식">
+          <button data-mode="first" aria-pressed="true">1등 당첨</button><button data-mode="last" aria-pressed="false">꼴등 당첨</button>
+        </div>
+        <span class="spacer"></span>
+        <div class="seg" role="group" aria-label="배속">
+          <button data-sp="1" aria-pressed="true">x1</button><button data-sp="2" aria-pressed="false">x2</button><button data-sp="4" aria-pressed="false">x4</button>
+        </div>
+        <button class="btn" id="btnSkip" disabled>결과 보기</button>
+        <button class="btn" id="btnReroll">스킬 재추첨</button>
+        <button class="btn go" id="btnStart">출발!</button>
+      </div>
+      <div class="track-wrap">
+        <canvas id="cv"></canvas>
+        <div class="countdown" id="countdown" hidden></div>
+        <div id="cutinHost"></div>
+      </div>
+      <div class="ticker" aria-live="polite">
+        <div class="now" id="tickNow">게이트에 들어섰습니다. 출발을 눌러주세요!</div>
+        <ol id="tickLog"></ol>
+      </div>
+    </section>
+
+    <aside class="side">
+      <h2 id="sideTitle">출주표</h2>
+      <div class="sub" id="sideSub">이번 레이스에 뽑힌 스킬이에요</div>
+      <ol id="board"></ol>
+    </aside>
+  </div>
+
+  <section class="roster">
+    <div class="roster-head">
+      <h2>등록된 친구들</h2>
+      <p id="rosterNote">처음 보이는 6명은 예시예요. 수정하거나 지우고 친구들을 넣어보세요. (최대 12명 출전)</p>
+      <span class="spacer"></span>
+      <button class="btn" id="btnResetRec">기록 초기화</button>
+    </div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <details class="rules">
+    <summary>공정한가요? 규칙과 스킬 목록</summary>
+    <p>모든 친구는 능력치가 똑같고, 같은 2000m 코스를 달려요. 레이스 시작 전에 각자 스킬 3개를 같은 확률로 무작위로 뽑아요(불운 스킬도 섞여 있어요). 달리는 동안에는 저마다 페이스가 오르내려서 순위가 계속 바뀌고, 뒤처진 사람에게는 관중 응원 보정이 조금 붙어요. 레이스당 많아야 한 번, 뒤쪽 절반 중 한 명에게 <b>역전각</b>이 터질 수 있어요(약 35%). 누구에게 터질지는 그때 추첨이라 특정 사람이 유리하지 않아요.</p>
+    <div class="pool" id="pool"></div>
+  </details>
+</div>
+
+<div class="modal" id="editModal" hidden>
+  <form class="sheet" id="editForm">
+    <h3 id="editTitle">친구 편집</h3>
+    <div class="photo">
+      <div id="edAv"></div>
+      <div class="fld"><span>사진 (가운데를 기준으로 정사각형으로 잘려요)</span>
+        <input type="file" id="edPhoto" accept="image/*">
+      </div>
+      <button type="button" class="btn" id="edPhotoClear">사진 지우기</button>
+    </div>
+    <div class="two">
+      <label class="fld"><span>이름</span><input class="inp" id="edName" maxlength="10" required></label>
+      <label class="fld"><span>한 줄 소개</span><input class="inp" id="edNick" maxlength="20"></label>
+    </div>
+    <div class="fld"><span>상징색</span><div class="swatches" id="edColors"></div></div>
+    <label class="fld"><span>출발 대사 (선택)</span><input class="inp" id="edL1" maxlength="30"></label>
+    <label class="fld"><span>스킬 발동 대사 (선택)</span><input class="inp" id="edL2" maxlength="30"></label>
+    <div class="two">
+      <label class="fld"><span>1등 대사 (선택)</span><input class="inp" id="edL3" maxlength="40"></label>
+      <label class="fld"><span>꼴등 대사 (선택)</span><input class="inp" id="edL4" maxlength="40"></label>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn go">저장</button>
+      <button type="button" class="btn" id="edCancel">취소</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn danger" id="edDelete">삭제</button>
+    </div>
+  </form>
+</div>
+
+<div class="modal" id="resModal" hidden>
+  <div class="sheet" id="resSheet"></div>
+</div>
+
+<script src="js/game.js"></script>
+
+</body>
+</html>
