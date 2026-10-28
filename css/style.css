@@ -144,3 +144,32 @@ canvas#cv{display:block;width:100%}
 .res-table .up{color:var(--good)} .res-table .down{color:var(--bad)}
 @media (prefers-reduced-motion:reduce){.cutin,.countdown span{animation:none}}
 html,body{margin:0}img{max-width:100%}
+
+/* ---------- 이름 한 번에 넣기 ---------- */
+.quick{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:10px;align-items:start}
+@media (max-width:640px){.quick{grid-template-columns:minmax(0,1fr)}}
+.quick textarea{width:100%;resize:vertical;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink);font-family:var(--f-body);min-height:80px}
+.quick-side{display:grid;gap:6px}
+
+/* ---------- 결승 연출 ---------- */
+.drama-band{position:absolute;left:0;right:0;top:42px;text-align:center;pointer-events:none;font-family:var(--f-led);font-size:clamp(14px,2.4vw,22px);letter-spacing:.3em;color:var(--led);text-shadow:0 0 12px rgba(255,182,39,.7);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.track-wrap.slow{box-shadow:inset 0 0 0 2px var(--led),0 0 30px rgba(255,182,39,.25)}
+.track-wrap.slow canvas{animation:shake .12s infinite}
+@keyframes shake{0%{transform:translate(0,0)}50%{transform:translate(.6px,-.4px)}100%{transform:translate(-.5px,.5px)}}
+@media (prefers-reduced-motion:reduce){.track-wrap.slow canvas,.drama-band{animation:none}}
+
+/* ---------- 전체 화면 ---------- */
+body.fs{overflow:hidden}
+body.fs .wrap{position:fixed;inset:0;max-width:none;padding:10px 14px;gap:10px;grid-template-rows:auto minmax(0,1fr);height:100%;background:var(--night);z-index:40}
+body.fs .brand p,body.fs .roster,body.fs .rules{display:none}
+body.fs .brand h1{font-size:28px}
+body.fs .top{align-items:center}
+body.fs .main{grid-template-columns:minmax(0,1fr) 300px;min-height:0;height:100%}
+body.fs .stage{grid-template-rows:auto minmax(0,1fr) auto;min-height:0;height:100%}
+body.fs .track-wrap{min-height:0}
+body.fs .controls{opacity:0;transition:opacity .3s;max-height:0;overflow:hidden}
+body.fs.fs-ui .controls{opacity:1;max-height:60px}
+body.fs .side{max-height:100%;overflow:auto}
+body.fs .ticker ol{max-height:70px}
+@media (max-width:900px){body.fs .main{grid-template-columns:minmax(0,1fr)} body.fs .side{display:none}}

@@ -37,10 +37,12 @@
         </div>
         <button class="btn" id="btnSkip" disabled>결과 보기</button>
         <button class="btn" id="btnReroll">스킬 재추첨</button>
+        <button class="btn" id="btnFs" title="단축키 F">⛶ 전체 화면</button>
         <button class="btn go" id="btnStart">출발!</button>
       </div>
-      <div class="track-wrap">
+      <div class="track-wrap" id="trackWrap">
         <canvas id="cv"></canvas>
+        <div class="drama-band" id="dramaBand" hidden></div>
         <div class="countdown" id="countdown" hidden></div>
         <div id="cutinHost"></div>
       </div>
@@ -63,6 +65,14 @@
       <p id="rosterNote">처음 보이는 6명은 예시예요. 수정하거나 지우고 친구들을 넣어보세요. (최대 12명 출전)</p>
       <span class="spacer"></span>
       <button class="btn" id="btnResetRec">기록 초기화</button>
+    </div>
+    <div class="quick">
+      <textarea id="quickNames" rows="3" placeholder="이름을 한 줄에 하나씩 (또는 쉼표로) 붙여넣고 '한 번에 추가'를 누르세요&#10;김싸피&#10;이싸피&#10;박싸피"></textarea>
+      <div class="quick-side">
+        <button class="btn go" id="btnQuick">한 번에 추가</button>
+        <label class="toggle"><input type="checkbox" id="quickReplace"> 기존 명단 지우고 넣기</label>
+        <span class="hint" id="quickMsg">사진·대사는 나중에 카드의 편집에서 넣으면 돼요.</span>
+      </div>
     </div>
     <div class="cards" id="cards"></div>
   </section>

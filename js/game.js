@@ -102,6 +102,7 @@ function buildRace(entries, seed){
     leaderTrip: rng() < 0.12 ? {at: 0.7 + rng()*0.2, done:false} : null,
   };
   return {seed, rng, weather, runners, events, t:0, phase:'ready', finish:[], leader:null, lastLead:-99, leadChanges:0, said:{}, doneAt:null,
+    slow:1, slowOn:false, freeze:0, focus:null, decided:false,
     title:`${RACE_NAMES[seed % RACE_NAMES.length]} 기념`, silent:false};
 }
 
@@ -110,6 +111,7 @@ function setupRace(keepSeed){
   const seed = keepSeed && R ? R.seed : (Math.random()*1e9)|0;
   R = buildRace(entries, seed);
   acc = 0; cam.init = false; cutQueue = []; $('#cutinHost').innerHTML = '';
+  $('#dramaBand').hidden = true; $('#trackWrap').classList.remove('slow');
   $('#bRace').textContent = R.title;
   $('#bCourse').textContent = WEATHER[R.weather];
   $('#bTime').textContent = '0:00.0'; $('#bLeft').textContent = `${D}m`;
@@ -271,7 +273,12 @@ function runSkills(r, p, sorted){
   }
 }
 function onFinish(r){
-  const k = R.finish.length;
+  const k = R.finish.length, n = R.runners.length;
+  // 결정적 순간: 1등 모드는 1착, 꼴등 모드는 뒤에서 두 번째 골인 → 히트스톱
+  if(!R.decided && ((mode === 'first' && k === 1) || (mode === 'last' && k === n-1))){
+    R.decided = true; R.freeze = 0.45; r.flash = 1;
+    if(mode === 'last'){ const l = R.runners.find(x => !x.finished); if(l) say(`${nm(r)} 골인! 이제 남은 건 ${nm(l)} 혼자… 오늘의 꼴등입니다!`, 'GOAL'); }
+  }
   if(k === 1) say(`${nm(r)}, 1착으로 골인!!`, 'GOAL');
   else if(k === 2){
     const gap = r.time - R.finish[0].time;
@@ -281,7 +288,8 @@ function onFinish(r){
 
 function finishRace(){
   if(R.phase === 'done') return;
-  R.phase = 'done';
+  R.phase = 'done'; R.focus = null; R.slowOn = false;
+  $('#dramaBand').hidden = true; $('#trackWrap').classList.remove('slow');
   $('#btnSkip').disabled = true; $('#btnStart').disabled = false; $('#btnReroll').disabled = false;
   const n = R.finish.length;
   R.finish.forEach((r,i) => {
@@ -382,11 +390,37 @@ function sizeCanvas(){
   W = cv.parentElement.clientWidth || 800;
   laneH = W < 520 ? 32 : W < 800 ? 38 : 44;
   const n = R ? Math.max(R.runners.length, 2) : 6;
+  if(document.body.classList.contains('fs')){
+    const avail = cv.parentElement.getBoundingClientRect().height || (window.innerHeight - 200);
+    laneH = Math.max(28, Math.min(80, Math.floor((avail - TOP - STRIP - 10) / n)));
+  }
   H = TOP + n*laneH + 10 + STRIP;
   dpr = Math.min(2, window.devicePixelRatio || 1);
-  cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  const pw = Math.round(W*dpr), ph = Math.round(H*dpr);
+  if(cv.width === pw && cv.height === ph) return;
+  cv.width = pw; cv.height = ph;
   cv.style.height = H + 'px';
 }
+new ResizeObserver(() => sizeCanvas()).observe(cv.parentElement);
+/* ---------- 전체 화면 ---------- */
+function setFs(on){
+  document.body.classList.toggle('fs', on);
+  $('#btnFs').textContent = on ? '전체 화면 해제' : '⛶ 전체 화면';
+  setTimeout(sizeCanvas, 50); setTimeout(sizeCanvas, 400);
+}
+function toggleFs(){
+  const on = !document.body.classList.contains('fs');
+  if(on){ (document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : Promise.reject()).catch(()=>{}); }
+  else if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  setFs(on);
+}
+document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && document.body.classList.contains('fs')) setFs(false); });
+let fsHide = null;
+document.addEventListener('mousemove', () => {
+  if(!document.body.classList.contains('fs')) return;
+  document.body.classList.add('fs-ui'); clearTimeout(fsHide);
+  fsHide = setTimeout(() => document.body.classList.remove('fs-ui'), 2500);
+});
 window.addEventListener('resize', sizeCanvas);
 function hash(k){ let x = Math.sin(k*127.1 + 311.7)*43758.5453; return x - Math.floor(x); }
 
@@ -394,9 +428,11 @@ function draw(dtReal, time){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   const runners = R ? R.runners : [];
   let minX = Infinity, maxX = -Infinity;
-  runners.forEach(r => { const x = Math.min(r.x, D+30); minX = Math.min(minX, x); maxX = Math.max(maxX, x); });
-  if(!runners.length){ minX = 0; maxX = 0; }
-  const viewT = Math.max(90, Math.min(360, (maxX-minX)*1.25 + 35));
+  const group = (R && R.focus && R.phase === 'running') ? R.focus : runners;
+  group.forEach(r => { const x = Math.min(r.x, D+30); minX = Math.min(minX, x); maxX = Math.max(maxX, x); });
+  if(!group.length){ minX = 0; maxX = 0; }
+  const focusing = group !== runners;
+  const viewT = focusing ? Math.max(60, Math.min(160, (maxX-minX)*1.6 + 40)) : Math.max(90, Math.min(360, (maxX-minX)*1.25 + 35));
   let rightT = Math.max(maxX + viewT*0.16, -12 + viewT);
   if(R && R.phase === 'done') rightT = Math.max(rightT, D + 30);
   const offT = rightT - maxX;
@@ -485,6 +521,17 @@ function draw(dtReal, time){
     }
   } else particles = [];
 
+  if(R && R.phase === 'running' && mode === 'last' && R.focus && R.focus.length === 1){
+    const r = R.focus[0], sx = X(Math.min(r.x, D + 400)), y = tTop + 5 + r.gate*laneH + laneH*0.5;
+    const g = ctx.createRadialGradient(sx-8, y, laneH*0.9, sx-8, y, laneH*3);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.72)');
+    ctx.fillStyle = g; ctx.fillRect(0, tTop, W, tH);
+  }
+  if(R && R.slowOn){
+    const v = ctx.createRadialGradient(W/2, (tTop+tH)/2, W*0.3, W/2, (tTop+tH)/2, W*0.75);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, tTop+tH);
+  }
   const sy = tTop + tH;
   ctx.fillStyle = '#050806'; ctx.fillRect(0, sy, W, STRIP);
   const px = m => 12 + (W-40) * Math.max(0, Math.min(1, m/D));
@@ -538,15 +585,53 @@ function drawRunner(r, sx, y, s, time, dtReal){
 }
 function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 
+/* ---------- 결승 연출 ----------
+   당첨 경계(1등 모드: 1위/2위, 꼴등 모드: 꼴찌/뒤에서 둘째)가 결승선에 가까워지면
+   접전 정도에 따라 슬로우. 뻔한 결과면 살짝만, 박빙이면 아주 느리게. */
+const TRIGGER_M = 70;
+function updateDrama(dt){
+  const unf = R.runners.filter(r => !r.finished).sort((a,b) => b.x - a.x);
+  let target = 1, on = false, focus = null, label = '';
+  if(mode === 'first'){
+    if(!R.decided && unf.length >= 1 && unf[0].x >= D - TRIGGER_M){
+      const gap = unf.length > 1 ? unf[0].x - unf[1].x : 99;
+      target = gap < 3 ? 0.22 : gap < 8 ? 0.4 : gap < 15 ? 0.6 : 0.85;
+      on = target < 0.7; focus = unf.slice(0, 2); label = gap < 3 ? 'PHOTO FINISH' : '1착 결정';
+    }
+  } else {
+    const n = R.runners.length;
+    if(unf.length === 1){ focus = unf; on = true; target = 0.6; label = '오늘의 꼴등'; }
+    else if(unf.length === 2 && (unf[0].x >= D - TRIGGER_M || R.finish.length >= n-2)){
+      const gap = unf[0].x - unf[1].x;
+      target = gap < 3 ? 0.22 : gap < 8 ? 0.4 : gap < 15 ? 0.6 : 0.85;
+      on = target < 0.7; focus = unf; label = gap < 3 ? '꼴찌 결정전' : '마지막 둘';
+    } else if(R.finish.length >= 1 && unf.length > 2){
+      // 앞사람들은 빠르게 넘기고 뒤쪽을 보여줘요
+      target = 1.6; focus = unf.slice(-3);
+    }
+  }
+  const k = 1 - Math.pow(0.02, dt);
+  R.slow += (target - R.slow) * k;
+  R.focus = focus;
+  if(on !== R.slowOn){
+    R.slowOn = on;
+    $('#dramaBand').hidden = !on; $('#dramaBand').textContent = label;
+    $('#trackWrap').classList.toggle('slow', on);
+  }
+}
+
 let last = 0, boardT = 0;
 function frame(ts){
   const dt = last ? Math.min(0.05, (ts - last)/1000) : 0.016; last = ts;
   if(R && R.phase === 'running'){
-    acc += dt * TIME_SCALE * speedMul;
+    updateDrama(dt);
+    if(R.freeze > 0) R.freeze -= dt;
+    else acc += dt * TIME_SCALE * speedMul * R.slow;
     let steps = 0;
     while(acc >= SIM_DT && steps++ < 400){ step(SIM_DT); acc -= SIM_DT; }
     $('#bTime').textContent = fmtT(R.t);
-    $('#bLeft').textContent = `${Math.max(0, Math.round(D - leadX()))}m`;
+    const refX = mode === 'last' ? R.runners.reduce((m,r)=>Math.min(m, Math.min(r.x, D)), D) : leadX();
+    $('#bLeft').textContent = `${Math.max(0, Math.round(D - refX))}m`;
     if(R.doneAt !== null && R.t - R.doneAt > 1.5*TIME_SCALE) finishRace();
   }
   draw(dt, ts/1000);
@@ -644,6 +729,30 @@ function setMode(m){
 document.querySelectorAll('.seg [data-mode]').forEach(b => b.addEventListener('click', () => { setMode(b.dataset.mode); if(R && R.phase === 'ready') setupRace(true); }));
 $('#btnStart').addEventListener('click', () => { if(R && R.phase === 'done') setupRace(false); startRace(); });
 $('#btnSkip').addEventListener('click', skipToEnd);
+$('#btnFs').addEventListener('click', toggleFs);
+document.addEventListener('keydown', e => {
+  if(e.target.matches('input,textarea,select')) return;
+  if(e.key === 'f' || e.key === 'F') toggleFs();
+  if(e.key === ' ' && !$('#btnStart').disabled){ e.preventDefault(); $('#btnStart').click(); }
+});
+
+/* ---------- 이름 한 번에 넣기 ---------- */
+$('#btnQuick').addEventListener('click', () => {
+  const names = $('#quickNames').value.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+  if(!names.length) return;
+  const replace = $('#quickReplace').checked;
+  if(replace){ roster = []; }
+  let entered = roster.filter(c=>c.entered).length, added = 0;
+  for(const name of names){
+    if(roster.some(c => c.name === name)) continue;
+    roster.push({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), name:name.slice(0,10), nick:'', color:COLORS[roster.length % COLORS.length],
+      lines:{start:'',skill:'',win:'',lose:''}, photo:null, entered: entered < 12});
+    if(entered < 12) entered++; added++;
+  }
+  saveRoster(); $('#quickNames').value = '';
+  renderCards(); if(idle()) setupRace(false);
+  $('#quickMsg').textContent = `${added}명 추가했어요.` + (names.length - added ? ` (이미 있는 이름 ${names.length-added}개는 건너뜀)` : '');
+});
 $('#btnResetRec').addEventListener('click', function(){
   if(this.dataset.armed){ records = {}; store.set('fd_records2', records); renderCards(); this.textContent = '기록 초기화'; delete this.dataset.armed; return; }
   this.dataset.armed = 1; this.textContent = '한 번 더 누르면 초기화';
