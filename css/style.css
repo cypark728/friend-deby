@@ -165,9 +165,11 @@ body.fs .wrap{position:fixed;inset:0;max-width:none;padding:10px 14px;gap:10px;g
 body.fs .brand p,body.fs .roster,body.fs .rules{display:none}
 body.fs .brand h1{font-size:28px}
 body.fs .top{align-items:center}
-body.fs .main{grid-template-columns:minmax(0,1fr) 300px;min-height:0;height:100%}
-body.fs .stage{grid-template-rows:auto minmax(0,1fr) auto;min-height:0;height:100%}
-body.fs .track-wrap{min-height:0}
+body.fs .main{grid-template-columns:minmax(0,1fr) 300px;min-height:0;height:100%;align-items:center}
+body.fs .stage{grid-template-rows:auto minmax(0,1fr) auto;min-height:0;height:100%;align-content:center}
+body.fs .track-wrap{min-height:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0}
+body.fs .track-wrap canvas{border:1px solid var(--line);border-radius:8px}
+body.fs .side{align-self:center}
 body.fs .controls{opacity:0;transition:opacity .3s;max-height:0;overflow:hidden}
 body.fs.fs-ui .controls{opacity:1;max-height:60px}
 body.fs .side{max-height:100%;overflow:auto}

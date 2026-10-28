@@ -20,7 +20,7 @@ const POOL = [
   {id:'chase', label:'추격자',       chance:.6,  big:true, desc:'65% 이후 뒤쪽 절반이면 5초간 +16%', check:(r,c)=>c.p>.95?'skip':(c.p>=.65 && c.rank>=Math.ceil(c.n/2)), fx:r=>boost(r,1.16,5)},
   {id:'reverse',label:'역전의 의지',  chance:.5,  big:true, desc:'90% 지점에서 4위 이하면 3초간 +24%', check:(r,c)=>c.p>=.9 ? (c.rank>=3 || 'skip') : false, fx:r=>boost(r,1.24,3)},
   {id:'snack', label:'간식 타임',     chance:.7,  desc:'체력이 20% 아래로 떨어지면 체력 35% 회복', check:r=>r.hp < r.hp0*.2, fx:r=>{ r.hp += r.hp0*.35; r.fatigued=false; }},
-  {id:'warp',  label:'지름길 발견',   chance:.3,  big:true, at:[.35,.65], desc:'순식간에 15m 앞으로 이동', check:atP, fx:r=>{ r.x += 15; r.warp = 1; }},
+  {id:'burst', label:'폭주',         chance:.3,  big:true, at:[.35,.65], desc:'중반 어딘가에서 2.5초간 +35%', check:atP, fx:r=>boost(r,1.35,2.5)},
   {id:'awake', label:'각성',         chance:.45, at:[.55,.85], desc:'후반 어딘가에서 6초간 +8%', check:atP, fx:r=>boost(r,1.08,6)},
   {id:'sand',  label:'모래 뿌리기',   chance:.5,  at:[.3,.8], desc:'바로 뒤 친구를 2초간 -20%', check:atP, fx:(r,c)=>{ const t = c.behind; if(t){ boost(t,.8,2); return `${nm(t)}가 모래를 뒤집어썼습니다!`; } return '뒤에 아무도 없어서 허공에 뿌렸습니다.'; }},
   {id:'check', label:'견제',         chance:.45, at:[.4,.85], desc:'선두를 3초간 -12% (내가 선두면 불발)', check:atP, fx:(r,c)=>{ const t = c.leader; if(t && t!==r){ boost(t,.88,3); return `선두 ${nm(t)}, 견제를 받고 주춤!`; } return '본인이 선두라 견제할 사람이 없습니다.'; }},
@@ -94,7 +94,7 @@ function buildRace(entries, seed){
       // 페이스 곡선: 저마다 다른 리듬으로 빨라졌다 느려졌다 해요 (평균은 모두 같아요)
       pace:[{a:0.04, f:0.7+rng()*0.9, ph:rng()}, {a:0.025, f:1.8+rng()*1.6, ph:rng()}],
       skills: drawSkills(rng),
-      delay: rng() < 0.08 ? 0.6 + rng()*0.9 : 0, finished:false, time:null, fatigued:false, flash:0, warp:0, bubble:null, rankAtHalf:null};
+      delay: rng() < 0.08 ? 0.6 + rng()*0.9 : 0, finished:false, time:null, fatigued:false, flash:0, bubble:null, rankAtHalf:null};
   });
   // 레이스 단위 드라마 (누구에게 터질지는 그 순간 추첨)
   const events = {
@@ -315,7 +315,7 @@ function margin(dt){
   if(L < 0.1) return '코'; if(L < 0.25) return '머리'; if(L < 0.5) return '목'; if(L > 10) return '대차';
   return (Math.round(L*2)/2).toString().replace('.5','½') + '마신';
 }
-const fmtT = t => `${Math.floor(t/60)}:${(t%60).toFixed(1).padStart(4,'0')}`;
+const fmtT = t => { const d = Math.round(t*10)/10, m = Math.floor(d/60); return `${m}:${(d - m*60).toFixed(1).padStart(4,'0')}`; };
 function showResults(){
   const pickIdx = mode === 'last' ? R.finish.length - 1 : 0;
   const w = R.finish[pickIdx];
@@ -431,16 +431,27 @@ function draw(dtReal, time){
   const group = (R && R.focus && R.phase === 'running') ? R.focus : runners;
   group.forEach(r => { const x = Math.min(r.x, D+30); minX = Math.min(minX, x); maxX = Math.max(maxX, x); });
   if(!group.length){ minX = 0; maxX = 0; }
-  const focusing = group !== runners;
-  const viewT = focusing ? Math.max(60, Math.min(160, (maxX-minX)*1.6 + 40)) : Math.max(90, Math.min(360, (maxX-minX)*1.25 + 35));
-  let rightT = Math.max(maxX + viewT*0.16, -12 + viewT);
-  if(R && R.phase === 'done') rightT = Math.max(rightT, D + 30);
+  const focusing = group !== runners, slow = R && R.slowOn;
+  let viewT, rightT;
+  if(slow){
+    // 결승 줌: 주목 대상 둘이 보이는 최소 폭으로, 결승선이 화면 오른쪽 1/4 지점에 오게
+    viewT = Math.max(34, Math.min(90, (maxX-minX)*1.8 + 30));
+    rightT = Math.min(D + viewT*0.28, maxX + viewT*0.35);
+  } else if(focusing){
+    viewT = Math.max(70, Math.min(160, (maxX-minX)*1.6 + 40));
+    rightT = Math.max(maxX + viewT*0.2, -12 + viewT);
+  } else {
+    viewT = Math.max(90, Math.min(360, (maxX-minX)*1.25 + 35));
+    rightT = Math.max(maxX + viewT*0.16, -12 + viewT);
+    if(R && R.phase === 'done') rightT = Math.max(rightT, D + 30);
+  }
   const offT = rightT - maxX;
   if(!cam.init){ cam.view = viewT; cam.off = offT; cam.init = true; }
-  const k = 1 - Math.pow(0.08, dtReal);
+  const k = 1 - Math.pow(slow ? 0.01 : 0.08, dtReal);
   cam.view += (viewT - cam.view)*k; cam.off += (offT - cam.off)*k;
-  cam.right = maxX + Math.max(cam.off, 8);
+  cam.right = maxX + Math.max(cam.off, slow ? -viewT : 8);
   const scale = W / cam.view, left = cam.right - cam.view;
+  const zoomS = Math.max(1, Math.min(1.45, 110 / cam.view)); // 줌인하면 캐릭터도 커져요
   const X = m => (m - left) * scale;
   const n = Math.max(runners.length, 2);
   const tTop = TOP, tH = n*laneH + 10, running = R && R.phase === 'running';
@@ -493,7 +504,7 @@ function draw(dtReal, time){
     const sx = X(Math.min(r.x, D + 400)), y = tTop + 5 + r.gate*laneH + laneH*0.86;
     if(running || (R && R.phase==='done')) r.leg += dtReal * r.v * 0.9 * sm;
     if(r.flash > 0) r.flash = Math.max(0, r.flash - dtReal*0.6);
-    drawRunner(r, sx, y, laneH/44, time, dtReal);
+    drawRunner(r, sx, y, laneH/44 * zoomS, time, dtReal);
     if(sx < -10){ ctx.fillStyle = r.c.color; ctx.beginPath(); ctx.moveTo(4, y-laneH*0.4); ctx.lineTo(12, y-laneH*0.55); ctx.lineTo(12, y-laneH*0.25); ctx.fill(); }
   }
   for(const r of ordered){
@@ -547,11 +558,6 @@ function drawRunner(r, sx, y, s, time, dtReal){
   const boosted = r.effects.some(e => e.mult > 1), slowed = r.effects.some(e => e.mult < 1);
   ctx.save(); ctx.translate(sx, y);
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(-8*s, 0, 15*s, 3*s, 0, 0, 7); ctx.fill();
-  if(r.warp > 0){
-    r.warp = Math.max(0, r.warp - dtReal*1.5);
-    ctx.globalAlpha = r.warp; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(-6*s, -18*s, (1-r.warp)*40*s + 8*s, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
-  }
   if(boosted){
     ctx.strokeStyle = c.color; ctx.lineWidth = 2*s; ctx.globalAlpha = 0.7;
     for(let i=0;i<4;i++){ const yy = -6*s - i*7*s, off = ((time*120 + i*13) % 20)*s; ctx.beginPath(); ctx.moveTo(-26*s - off, yy); ctx.lineTo(-44*s - off, yy); ctx.stroke(); }
@@ -593,18 +599,19 @@ function updateDrama(dt){
   const unf = R.runners.filter(r => !r.finished).sort((a,b) => b.x - a.x);
   let target = 1, on = false, focus = null, label = '';
   if(mode === 'first'){
-    if(!R.decided && unf.length >= 1 && unf[0].x >= D - TRIGGER_M){
+    if(R.decided) target = 1.6;
+    else if(unf.length >= 1 && unf[0].x >= D - TRIGGER_M){
       const gap = unf.length > 1 ? unf[0].x - unf[1].x : 99;
-      target = gap < 3 ? 0.22 : gap < 8 ? 0.4 : gap < 15 ? 0.6 : 0.85;
-      on = target < 0.7; focus = unf.slice(0, 2); label = gap < 3 ? 'PHOTO FINISH' : '1착 결정';
+      target = gap < 3 ? 0.18 : gap < 8 ? 0.3 : gap < 15 ? 0.45 : 0.65;
+      on = true; focus = unf.slice(0, 2); label = gap < 3 ? 'PHOTO FINISH' : '1착 결정';
     }
   } else {
     const n = R.runners.length;
-    if(unf.length === 1){ focus = unf; on = true; target = 0.6; label = '오늘의 꼴등'; }
+    if(unf.length === 1){ focus = unf; on = true; target = 0.5; label = '오늘의 꼴등'; }
     else if(unf.length === 2 && (unf[0].x >= D - TRIGGER_M || R.finish.length >= n-2)){
       const gap = unf[0].x - unf[1].x;
-      target = gap < 3 ? 0.22 : gap < 8 ? 0.4 : gap < 15 ? 0.6 : 0.85;
-      on = target < 0.7; focus = unf; label = gap < 3 ? '꼴찌 결정전' : '마지막 둘';
+      target = gap < 3 ? 0.18 : gap < 8 ? 0.3 : gap < 15 ? 0.45 : 0.65;
+      on = true; focus = unf; label = gap < 3 ? '꼴찌 결정전' : '마지막 둘';
     } else if(R.finish.length >= 1 && unf.length > 2){
       // 앞사람들은 빠르게 넘기고 뒤쪽을 보여줘요
       target = 1.6; focus = unf.slice(-3);
@@ -615,9 +622,10 @@ function updateDrama(dt){
   R.focus = focus;
   if(on !== R.slowOn){
     R.slowOn = on;
-    $('#dramaBand').hidden = !on; $('#dramaBand').textContent = label;
+    $('#dramaBand').hidden = !on;
     $('#trackWrap').classList.toggle('slow', on);
   }
+  if(on && $('#dramaBand').textContent !== label) $('#dramaBand').textContent = label;
 }
 
 let last = 0, boardT = 0;
@@ -626,7 +634,7 @@ function frame(ts){
   if(R && R.phase === 'running'){
     updateDrama(dt);
     if(R.freeze > 0) R.freeze -= dt;
-    else acc += dt * TIME_SCALE * speedMul * R.slow;
+    else acc += dt * TIME_SCALE * (R.slowOn ? R.slow : speedMul * R.slow);
     let steps = 0;
     while(acc >= SIM_DT && steps++ < 400){ step(SIM_DT); acc -= SIM_DT; }
     $('#bTime').textContent = fmtT(R.t);
