@@ -166,12 +166,11 @@ body.fs .brand p,body.fs .roster,body.fs .rules{display:none}
 body.fs .brand h1{font-size:28px}
 body.fs .top{align-items:center}
 body.fs .main{grid-template-columns:minmax(0,1fr) 300px;min-height:0;height:100%;align-items:center}
-body.fs .stage{grid-template-rows:auto minmax(0,1fr) auto;min-height:0;height:100%;align-content:center}
-body.fs .track-wrap{min-height:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0}
-body.fs .track-wrap canvas{border:1px solid var(--line);border-radius:8px}
+body.fs .stage{grid-template-rows:auto auto;min-height:0;height:100%;align-content:center;position:relative}
+body.fs .track-wrap{min-height:0}
 body.fs .side{align-self:center}
-body.fs .controls{opacity:0;transition:opacity .3s;max-height:0;overflow:hidden}
-body.fs.fs-ui .controls{opacity:1;max-height:60px}
+body.fs .controls{position:absolute;left:0;right:0;top:0;z-index:5;padding:8px 10px;background:rgba(12,20,17,.9);border:1px solid var(--line);border-radius:8px;opacity:0;pointer-events:none;transition:opacity .25s}
+body.fs.fs-ui .controls{opacity:1;pointer-events:auto}
 body.fs .side{max-height:100%;overflow:auto}
 body.fs .ticker ol{max-height:70px}
 @media (max-width:900px){body.fs .main{grid-template-columns:minmax(0,1fr)} body.fs .side{display:none}}
