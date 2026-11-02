@@ -14,26 +14,27 @@ const D = 2000, V0 = 16.5, TIME_SCALE = 4, SIM_DT = 1/30, HP0 = 112;
    c = {t, p, rank, n, ahead, behind, leader}   s.at = 랜덤 발동 지점. big = 컷인 */
 const atP = (r, c, s) => c.p >= s.at;
 const POOL = [
-  {id:'dash',  label:'출발 대시',     chance:.6,  desc:'출발 직후 3초간 속도 +15%', check:(r,c)=>c.t > r.delay + 0.4, fx:r=>boost(r,1.15,3)},
-  {id:'wind',  label:'바람을 타고',   chance:.55, at:[.3,.7], desc:'중반 어딘가에서 4초간 +10%', check:atP, fx:r=>boost(r,1.10,4)},
-  {id:'spurt', label:'라스트 스퍼트', chance:.55, big:true, desc:'남은 20%에서 4초간 +14%', check:(r,c)=>c.p >= .8, fx:r=>boost(r,1.14,4)},
-  {id:'chase', label:'추격자',       chance:.6,  big:true, desc:'65% 이후 뒤쪽 절반이면 5초간 +16%', check:(r,c)=>c.p>.95?'skip':(c.p>=.65 && c.rank>=Math.ceil(c.n/2)), fx:r=>boost(r,1.16,5)},
-  {id:'reverse',label:'역전의 의지',  chance:.5,  big:true, desc:'90% 지점에서 4위 이하면 3초간 +24%', check:(r,c)=>c.p>=.9 ? (c.rank>=3 || 'skip') : false, fx:r=>boost(r,1.24,3)},
-  {id:'snack', label:'간식 타임',     chance:.7,  desc:'체력이 20% 아래로 떨어지면 체력 35% 회복', check:r=>r.hp < r.hp0*.2, fx:r=>{ r.hp += r.hp0*.35; r.fatigued=false; }},
-  {id:'burst', label:'폭주',         chance:.3,  big:true, at:[.35,.65], desc:'중반 어딘가에서 2.5초간 +35%', check:atP, fx:r=>boost(r,1.35,2.5)},
-  {id:'awake', label:'각성',         chance:.45, at:[.55,.85], desc:'후반 어딘가에서 6초간 +8%', check:atP, fx:r=>boost(r,1.08,6)},
-  {id:'sand',  label:'모래 뿌리기',   chance:.5,  at:[.3,.8], desc:'바로 뒤 친구를 2초간 -20%', check:atP, fx:(r,c)=>{ const t = c.behind; if(t){ boost(t,.8,2); return `${nm(t)}가 모래를 뒤집어썼습니다!`; } return '뒤에 아무도 없어서 허공에 뿌렸습니다.'; }},
-  {id:'check', label:'견제',         chance:.45, at:[.4,.85], desc:'선두를 3초간 -12% (내가 선두면 불발)', check:atP, fx:(r,c)=>{ const t = c.leader; if(t && t!==r){ boost(t,.88,3); return `선두 ${nm(t)}, 견제를 받고 주춤!`; } return '본인이 선두라 견제할 사람이 없습니다.'; }},
-  {id:'allin', label:'올인',         chance:.5,  big:true, desc:'70% 지점에서 3초간 +25%, 대신 체력 25 소모', check:(r,c)=>c.p>=.7, fx:r=>{ boost(r,1.25,3); r.hp -= 25; }},
-  {id:'cheer', label:'응원 받기',     chance:.7,  big:true, desc:'50% 이후 꼴찌면 5초간 +18%', check:(r,c)=>c.p>.97?'skip':(c.p>=.5 && c.rank===c.n-1), fx:r=>boost(r,1.18,5)},
-  {id:'draft', label:'슬립스트림',    chance:.6,  desc:'앞 친구 3m 안에 붙으면 3초간 +8%', check:(r,c)=>c.p>.95?'skip':(c.p>.2 && c.ahead && c.ahead.x - r.x < 3), fx:r=>boost(r,1.08,3)},
-  {id:'pride', label:'선두의 자존심', chance:.6,  desc:'70% 이후 선두면 4초간 +8%', check:(r,c)=>c.p>.95?'skip':(c.p>=.7 && c.rank===0), fx:r=>boost(r,1.08,4)},
-  {id:'lace',  label:'신발끈 풀림',   chance:.35, neg:true, at:[.15,.9], desc:'(불운) 어딘가에서 1.5초간 -30%', check:atP, fx:r=>boost(r,.7,1.5)},
-  {id:'sleepy',label:'졸음',         chance:.35, neg:true, at:[.1,.5], desc:'(불운) 초중반에 2초간 -15%', check:atP, fx:r=>boost(r,.85,2)},
-  {id:'phone', label:'카톡 알림',     chance:.35, neg:true, at:[.2,.8], desc:'(불운) 폰 보느라 1초간 -40%', check:atP, fx:r=>boost(r,.6,1)},
-  {id:'gum',   label:'풍선껌',       chance:.8,  joke:true, at:[.2,.8], desc:'아무 효과 없음. 그냥 귀여움', check:atP, fx:()=>'풍선이 아주 크게 부풀었습니다. 효과는 없습니다.'},
+  {id:'dash', tag:'+15%',  label:'출발 대시',     chance:.6,  desc:'출발 직후 3초간 속도 +15%', check:(r,c)=>c.t > r.delay + 0.4, fx:r=>boost(r,1.15,3)},
+  {id:'wind', tag:'+10%',  label:'바람을 타고',   chance:.55, at:[.3,.7], desc:'중반 어딘가에서 4초간 +10%', check:atP, fx:r=>boost(r,1.10,4)},
+  {id:'spurt', tag:'+14%', label:'라스트 스퍼트', chance:.55, big:true, desc:'남은 20%에서 4초간 +14%', check:(r,c)=>c.p >= .8, fx:r=>boost(r,1.14,4)},
+  {id:'chase', tag:'+16%', label:'추격자',       chance:.6,  big:true, desc:'65% 이후 뒤쪽 절반이면 5초간 +16%', check:(r,c)=>c.p>.95?'skip':(c.p>=.65 && c.rank>=Math.ceil(c.n/2)), fx:r=>boost(r,1.16,5)},
+  {id:'reverse', tag:'+24%',label:'역전의 의지',  chance:.5,  big:true, desc:'90% 지점에서 4위 이하면 3초간 +24%', check:(r,c)=>c.p>=.9 ? (c.rank>=3 || 'skip') : false, fx:r=>boost(r,1.24,3)},
+  {id:'snack', tag:'체력 +35%', label:'간식 타임',     chance:.7,  desc:'체력이 20% 아래로 떨어지면 체력 35% 회복', check:r=>r.hp < r.hp0*.2, fx:r=>{ r.hp += r.hp0*.35; r.fatigued=false; }},
+  {id:'burst', tag:'+35%', label:'폭주',         chance:.3,  big:true, at:[.35,.65], desc:'중반 어딘가에서 2.5초간 +35%', check:atP, fx:r=>boost(r,1.35,2.5)},
+  {id:'awake', tag:'+8%', label:'각성',         chance:.45, at:[.55,.85], desc:'후반 어딘가에서 6초간 +8%', check:atP, fx:r=>boost(r,1.08,6)},
+  {id:'sand', tag:'상대 -20%',  label:'모래 뿌리기',   chance:.5,  at:[.3,.8], desc:'바로 뒤 친구를 2초간 -20%', check:atP, fx:(r,c)=>{ const t = c.behind; if(t){ boost(t,.8,2); hitBy(t, '모래 맞음 -20%'); return {msg:`${nm(t)}가 모래를 뒤집어썼습니다!`, target:t}; } return '뒤에 아무도 없어서 허공에 뿌렸습니다.'; }},
+  {id:'check', tag:'선두 -12%', label:'견제',         chance:.45, at:[.4,.85], desc:'선두를 3초간 -12% (내가 선두면 불발)', check:atP, fx:(r,c)=>{ const t = c.leader; if(t && t!==r){ boost(t,.88,3); hitBy(t, '견제 당함 -12%'); return {msg:`선두 ${nm(t)}, 견제를 받고 주춤!`, target:t}; } return '본인이 선두라 견제할 사람이 없습니다.'; }},
+  {id:'allin', tag:'+25%', label:'올인',         chance:.5,  big:true, desc:'70% 지점에서 3초간 +25%, 대신 체력 25 소모', check:(r,c)=>c.p>=.7, fx:r=>{ boost(r,1.25,3); r.hp -= 25; }},
+  {id:'cheer', tag:'+18%', label:'응원 받기',     chance:.7,  big:true, desc:'50% 이후 꼴찌면 5초간 +18%', check:(r,c)=>c.p>.97?'skip':(c.p>=.5 && c.rank===c.n-1), fx:r=>boost(r,1.18,5)},
+  {id:'draft', tag:'+8%', label:'슬립스트림',    chance:.6,  desc:'앞 친구 3m 안에 붙으면 3초간 +8%', check:(r,c)=>c.p>.95?'skip':(c.p>.2 && c.ahead && c.ahead.x - r.x < 3), fx:r=>boost(r,1.08,3)},
+  {id:'pride', tag:'+8%', label:'선두의 자존심', chance:.6,  desc:'70% 이후 선두면 4초간 +8%', check:(r,c)=>c.p>.95?'skip':(c.p>=.7 && c.rank===0), fx:r=>boost(r,1.08,4)},
+  {id:'lace', tag:'-30%',  label:'신발끈 풀림',   chance:.35, neg:true, at:[.15,.9], desc:'(불운) 어딘가에서 1.5초간 -30%', check:atP, fx:r=>boost(r,.7,1.5)},
+  {id:'sleepy', tag:'-15%',label:'졸음',         chance:.35, neg:true, at:[.1,.5], desc:'(불운) 초중반에 2초간 -15%', check:atP, fx:r=>boost(r,.85,2)},
+  {id:'phone', tag:'-40%', label:'카톡 알림',     chance:.35, neg:true, at:[.2,.8], desc:'(불운) 폰 보느라 1초간 -40%', check:atP, fx:r=>boost(r,.6,1)},
+  {id:'gum', tag:'효과 없음',   label:'풍선껌',       chance:.8,  joke:true, at:[.2,.8], desc:'아무 효과 없음. 그냥 귀여움', check:atP, fx:()=>'풍선이 아주 크게 부풀었습니다. 효과는 없습니다.'},
 ];
 function boost(r, mult, sec){ r.effects.push({mult, until:R.t + sec}); }
+function hitBy(t, text){ t.bubble = {text, neg:true, life:2}; t.flash = 1; t.hitFx = 1; }
 
 function samples(){ return [
   {id:'c1',name:'김지각',nick:'오늘도 5분 늦음',color:COLORS[0],lines:{start:'아 알람 못 들었어!',skill:'출석 부르기 전에 도착한다!',win:'봤지? 지각은 해도 1등은 한다.',lose:'...오늘도 늦었네.'},photo:null,entered:true},
@@ -94,7 +95,7 @@ function buildRace(entries, seed){
       // 페이스 곡선: 저마다 다른 리듬으로 빨라졌다 느려졌다 해요 (평균은 모두 같아요)
       pace:[{a:0.04, f:0.7+rng()*0.9, ph:rng()}, {a:0.025, f:1.8+rng()*1.6, ph:rng()}],
       skills: drawSkills(rng),
-      delay: rng() < 0.08 ? 0.6 + rng()*0.9 : 0, finished:false, time:null, fatigued:false, flash:0, bubble:null, rankAtHalf:null};
+      delay: rng() < 0.08 ? 0.6 + rng()*0.9 : 0, finished:false, time:null, fatigued:false, flash:0, hitFx:0, gone:0, bubble:null, rankAtHalf:null};
   });
   // 레이스 단위 드라마 (누구에게 터질지는 그 순간 추첨)
   const events = {
@@ -120,7 +121,7 @@ function setupRace(keepSeed){
   $('#btnStart').disabled = R.runners.length < 2;
   $('#btnSkip').disabled = true; $('#btnReroll').disabled = false;
   $('#sideTitle').textContent = '출주표';
-  $('#sideSub').textContent = '이번 레이스에 뽑힌 스킬이에요. 마음에 안 들면 재추첨하세요.';
+  $('#sideSub').textContent = '스킬은 비공개예요. 달리면서 터질 때 보여요.';
   buildBoard(); sizeCanvas();
 }
 
@@ -138,16 +139,21 @@ const leadX = () => R.runners.reduce((m,r)=>Math.max(m, Math.min(r.x, D)), 0);
 const nm = r => `<b>${esc(r.c.name)}</b>`;
 
 let cutQueue = [], cutBusy = false;
-function cutin(r, title, sub, drama){
-  if(R.silent || cutQueue.length > 2) return;
-  cutQueue.push([r, title, sub, drama]); if(!cutBusy) nextCut();
+function cutin(r, title, sub, drama, kind='big', target=null){
+  if(R.silent || cutQueue.length > 3) return;
+  cutQueue.push([r, title, sub, drama, kind, target]); if(!cutBusy) nextCut();
 }
 function nextCut(){
   const item = cutQueue.shift(); if(!item){ cutBusy=false; return; }
-  const [r, title, sub, drama] = item; cutBusy = true;
-  $('#cutinHost').innerHTML = `<div class="cutin ${drama?'drama':''}" style="--c:${r.c.color}">${avHTML(r.c,72)}
-    <div><div class="who">${esc(r.c.name)}</div><div class="sk">${esc(title)}</div><div class="ln">“${esc(r.c.lines.skill || '간다!')}”</div>${sub?`<div class="fx">${esc(sub)}</div>`:''}</div></div>`;
-  setTimeout(() => { $('#cutinHost').innerHTML=''; nextCut(); }, Math.max(700, (drama?2200:1600)/Math.sqrt(speedMul)));
+  const [r, title, sub, drama, kind, target] = item; cutBusy = true;
+  const isNeg = kind === 'neg', isTgt = kind === 'target', isJoke = kind === 'joke';
+  const quote = isNeg ? '으악!' : isJoke ? '...' : (r.c.lines.skill || '간다!');
+  const badge = drama ? '★ 역전각' : isNeg ? '▼ 불운' : isTgt ? '✖ 방해' : isJoke ? '· 효과 없음' : '▲ 버프';
+  const tgt = target ? `<div class="arrow">➜</div>${avHTML(target.c,72)}<div class="victim">${esc(target.c.name)}<small>▼ 당했다!</small></div>` : '';
+  $('#cutinHost').innerHTML = `<div class="cutin ${drama?'drama':''} ${kind}" style="--c:${r.c.color}"><div class="badge">${badge}</div>${avHTML(r.c,72)}
+    <div style="min-width:0"><div class="who">${esc(r.c.name)}</div><div class="sk">${esc(title)}</div><div class="ln">“${esc(quote)}”</div>${sub?`<div class="fx">${esc(sub)}</div>`:''}</div>${tgt}</div>`;
+  const ms = drama ? 2200 : kind.includes('big') ? 1700 : 1300;
+  setTimeout(() => { $('#cutinHost').innerHTML=''; nextCut(); }, Math.max(600, ms/Math.sqrt(speedMul)));
 }
 
 /* ---------- simulation ---------- */
@@ -168,8 +174,8 @@ function startRace(){
 function go(){
   R.phase = 'running';
   $('#btnSkip').disabled = false;
-  $('#sideTitle').textContent = '실시간 순위';
-  $('#sideSub').textContent = '선두와의 거리는 마신(약 2.4m) 단위예요. 노란 칩은 발동한 스킬이에요.';
+  $('#sideTitle').textContent = mode === 'last' ? '탈출 현황' : '실시간 순위';
+  $('#sideSub').textContent = mode === 'last' ? '결승선을 넘으면 탈출. 마지막까지 남는 사람이 꼴등이에요.' : '선두와의 거리는 마신(약 2.4m) 단위예요.';
   say('게이트 오픈! 일제히 출발했습니다!', 'START');
   const talker = R.runners[(Math.random()*R.runners.length)|0];
   if(talker.c.lines.start) say(`${nm(talker)}: “${esc(talker.c.lines.start)}”`, 'START');
@@ -265,24 +271,32 @@ function runSkills(r, p, sorted){
     }
     s.state = 'used';
     const extra = s.def.fx(r, c);
-    r.flash = 1; r.bubble = {text:s.name, neg:!!s.def.neg, life:1.6};
-    if(s.def.big){ say(`${nm(r)}, <b>「${esc(s.name)}」</b> 발동!`); cutin(r, s.name, s.def.desc, false); }
+    const target = extra && extra.target, msg = typeof extra === 'string' ? extra : extra && extra.msg;
+    r.flash = 1; r.bubble = {text:`${s.name} ${s.def.tag}`, neg:!!s.def.neg, neutral:!!s.def.joke, life:1.6};
+    if(s.def.big) say(`${nm(r)}, <b>「${esc(s.name)}」</b> 발동!`);
     else if(s.def.neg) say(`이런! ${nm(r)}, <b>「${esc(s.name)}」</b>!`);
     else say(`${nm(r)}, <b>「${esc(s.name)}」</b>!`);
-    if(typeof extra === 'string') say(extra);
+    if(target) cutin(r, `${s.name} → ${target.c.name}`, `${target.c.name} ${s.def.tag.replace(/^(상대|선두) /, '')} · ${s.def.desc}`, false, 'target', target);
+    else cutin(r, s.name, `${s.def.tag} · ${s.def.desc.replace(/^\(불운\) /, '')}`, false, s.def.neg ? 'neg' : s.def.joke ? 'joke' : s.def.big ? 'good big' : 'good small');
+    if(msg) say(msg);
   }
 }
 function onFinish(r){
   const k = R.finish.length, n = R.runners.length;
+  if(mode === 'last' && k < n){
+    r.bubble = {text:'탈출!', neg:false, neutral:true, life:1.2};
+    if(k < n-1) say(`${nm(r)}, ${k}번째로 탈출! 남은 사람 ${n-k}명.`, 'OUT');
+  }
   // 결정적 순간: 1등 모드는 1착, 꼴등 모드는 뒤에서 두 번째 골인 → 히트스톱
   if(!R.decided && ((mode === 'first' && k === 1) || (mode === 'last' && k === n-1))){
-    R.decided = true; R.freeze = 0.5; r.flash = 1;
+    R.decided = true; R.freeze = mode === 'last' ? 0 : 0.5; r.flash = 1;
     if(mode === 'last'){
       const l = R.runners.find(x => !x.finished);
-      r.bubble = {text:'탈출!', neg:false, life:2.5};
-      if(l){ l.bubble = {text:'꼴등 확정', neg:true, life:3}; l.flash = 1; say(`${nm(r)} 탈출! 오늘의 꼴등은 ${nm(l)}입니다!`, 'GOAL'); }
-    } else r.bubble = {text:'1착!', neg:false, life:2.5};
+      r.bubble = {text:'탈출!', neg:false, neutral:true, life:2.5};
+      if(l){ l.bubble = {text:'꼴등 확정', neg:true, life:3}; l.flash = 1; say(`${nm(r)} 탈출! 트랙에 남은 건 ${nm(l)} 혼자… 오늘의 꼴등입니다!`, 'GOAL'); }
+    } else r.bubble = {text:'1착!', neg:false, neutral:true, life:2.5};
   }
+  if(mode === 'last') return;
   if(k === 1) say(`${nm(r)}, 1착으로 골인!!`, 'GOAL');
   else if(k === 2){
     const gap = r.time - R.finish[0].time;
@@ -350,11 +364,9 @@ function buildBoard(){
   const ol = $('#board'); ol.innerHTML = ''; rowEls = new Map();
   R.runners.forEach(r => {
     const li = document.createElement('li'); li.className = 'row';
-    li.innerHTML = `<div class="rk"></div>${avHTML(r.c,32)}<div style="min-width:0"><div class="nm">${esc(r.c.name)}</div><div class="meta"></div><div class="hp"><i></i></div><div class="sks"></div></div><div class="gap"></div>`;
+    li.innerHTML = `<div class="rk"></div>${avHTML(r.c,32)}<div style="min-width:0"><div class="nm">${esc(r.c.name)}</div><div class="meta"></div><div class="hp"><i></i></div></div><div class="gap"></div>`;
     ol.appendChild(li);
-    const sks = li.querySelector('.sks');
-    const chips = r.skills.map(s => { const sp = document.createElement('span'); sp.textContent = s.name; sp.title = `${s.def.desc} (발동 ${Math.round(s.def.chance*100)}%)`; sp.className = s.def.big ? 'big' : s.def.neg ? 'neg' : ''; sks.appendChild(sp); return sp; });
-    rowEls.set(r, {li, chips, rk:li.querySelector('.rk'), meta:li.querySelector('.meta'), gap:li.querySelector('.gap'), hp:li.querySelector('.hp i')});
+    rowEls.set(r, {li, rk:li.querySelector('.rk'), meta:li.querySelector('.meta'), gap:li.querySelector('.gap'), hp:li.querySelector('.hp i')});
   });
   updateBoard();
 }
@@ -370,6 +382,11 @@ function updateBoard(){
       e.rk.textContent = r.gate+1;
       e.meta.textContent = `${r.gate+1}번 게이트`;
       e.gap.textContent = '';
+    } else if(mode === 'last'){
+      const st = r.effects.some(x=>x.mult>1) ? '가속 중!' : r.effects.some(x=>x.mult<1) ? '주춤!' : r.fatigued ? '지침' : '달리는 중';
+      if(r.finished){ const k = R.finish.indexOf(r)+1; e.rk.textContent = '✓'; e.meta.textContent = `${k}번째 탈출 · ${fmtT(r.time)}`; e.gap.textContent = k === R.runners.length ? '꼴등' : ''; }
+      else { e.rk.textContent = i - R.finish.length + 1; e.meta.textContent = st; e.gap.textContent = `${Math.max(0, Math.round(D - r.x))}m`; }
+      e.li.classList.toggle('out', r.finished && !(R.finish.length === R.runners.length && R.finish.indexOf(r) === R.runners.length-1));
     } else {
       e.rk.textContent = i+1;
       e.meta.textContent = r.finished ? `골인 ${fmtT(r.time)}` : r.effects.some(x=>x.mult>1) ? '가속 중!' : r.effects.some(x=>x.mult<1) ? '주춤!' : r.fatigued ? '지침' : '달리는 중';
@@ -377,7 +394,6 @@ function updateBoard(){
       else if(r.finished && lead.finished) e.gap.textContent = `+${(r.time - lead.time).toFixed(1)}초`;
       else { const L = (Math.min(lead.x,D) - Math.min(r.x,D))/2.4; e.gap.textContent = L < 0.1 ? '코' : `+${L.toFixed(1)}`; }
     }
-    r.skills.forEach((s,j) => { const ch = e.chips[j]; ch.classList.toggle('used', s.state==='used'); ch.classList.toggle('miss', s.state==='miss'); });
     e.hp.style.width = `${Math.max(0, Math.min(100, r.hp/r.hp0*100))}%`;
     e.hp.style.background = r.hp/r.hp0 < 0.2 ? 'var(--hot)' : 'var(--good)';
     e.li.classList.toggle('skill', r.flash > 0);
@@ -395,8 +411,8 @@ function sizeCanvas(){
   laneH = W < 520 ? 32 : W < 800 ? 38 : 44;
   const n = R ? Math.max(R.runners.length, 2) : 6;
   if(document.body.classList.contains('fs')){
-    const stage = document.querySelector('.stage'), ticker = document.querySelector('.ticker');
-    const avail = (stage.clientHeight - ticker.offsetHeight - 16) || (window.innerHeight - 200);
+    const wrap = document.querySelector('.wrap'), top = document.querySelector('.top'), ticker = document.querySelector('.ticker');
+    const avail = (wrap.clientHeight - top.offsetHeight - 20 - ticker.offsetHeight - 16 - 20) || (window.innerHeight - 200);
     laneH = Math.max(28, Math.min(110, Math.floor((avail - TOP - STRIP - 10) / n)));
   }
   H = TOP + n*laneH + 10 + STRIP;
@@ -406,11 +422,12 @@ function sizeCanvas(){
   cv.width = pw; cv.height = ph;
   cv.style.height = H + 'px';
 }
-const ro = new ResizeObserver(() => sizeCanvas()); ro.observe(cv.parentElement); ro.observe(document.querySelector('.stage'));
+const ro = new ResizeObserver(() => sizeCanvas()); ro.observe(cv.parentElement); ro.observe(document.querySelector('.wrap'));
 /* ---------- 전체 화면 ---------- */
 function setFs(on){
   document.body.classList.toggle('fs', on);
   $('#btnFs').textContent = on ? '전체 화면 해제' : '⛶ 전체 화면';
+  if(on) fsHint(); else { const h = $('#fsHint'); if(h) h.style.opacity = 0; }
   setTimeout(sizeCanvas, 50); setTimeout(sizeCanvas, 400);
 }
 function toggleFs(){
@@ -420,12 +437,14 @@ function toggleFs(){
   setFs(on);
 }
 document.addEventListener('fullscreenchange', () => { if(!document.fullscreenElement && document.body.classList.contains('fs')) setFs(false); });
-let fsHide = null;
-document.addEventListener('mousemove', () => {
-  if(!document.body.classList.contains('fs')) return;
-  document.body.classList.add('fs-ui'); clearTimeout(fsHide);
-  fsHide = setTimeout(() => document.body.classList.remove('fs-ui'), 2500);
-});
+let hintT = null;
+function fsHint(){
+  let h = $('#fsHint');
+  if(!h){ h = document.createElement('div'); h.id = 'fsHint'; h.className = 'fs-hint'; document.body.appendChild(h); }
+  h.innerHTML = '<b>Space</b> 출발 · <b>R</b> 순서 섞기 · <b>Esc</b> 전체 화면 해제';
+  h.style.opacity = 1; clearTimeout(hintT);
+  hintT = setTimeout(() => { h.style.opacity = 0; }, 3500);
+}
 window.addEventListener('resize', sizeCanvas);
 function hash(k){ let x = Math.sin(k*127.1 + 311.7)*43758.5453; return x - Math.floor(x); }
 
@@ -518,11 +537,12 @@ function draw(dtReal, time){
     if(r.bubble.life <= 0){ r.bubble = null; continue; }
     const sx = X(Math.min(r.x, D + 400)), y = tTop + 5 + r.gate*laneH + laneH*0.86 - laneH*0.95;
     ctx.font = `700 12px "IBM Plex Sans KR", sans-serif`; ctx.textAlign = 'center';
-    const tw = ctx.measureText(r.bubble.text).width + 12;
+    const btxt = (r.bubble.neg ? '▼ ' : r.bubble.neutral ? '' : '▲ ') + r.bubble.text;
+    const tw = ctx.measureText(btxt).width + 12;
     const bx = Math.min(W - tw/2 - 4, Math.max(tw/2 + 4, sx));
     ctx.globalAlpha = Math.min(1, r.bubble.life*3);
-    ctx.fillStyle = r.bubble.neg ? '#ff5b4a' : '#ffb627'; roundRect(bx - tw/2, Math.max(2, y-16), tw, 18, 9); ctx.fill();
-    ctx.fillStyle = r.bubble.neg ? '#fff' : '#1a1204'; ctx.fillText(r.bubble.text, bx, Math.max(2, y-16) + 13);
+    ctx.fillStyle = r.bubble.neg ? '#e03b2c' : r.bubble.neutral ? '#ffb627' : '#2fb36b'; roundRect(bx - tw/2, Math.max(2, y-16), tw, 18, 9); ctx.fill();
+    ctx.fillStyle = r.bubble.neutral ? '#1a1204' : '#fff'; ctx.fillText(btxt, bx, Math.max(2, y-16) + 13);
     ctx.globalAlpha = 1;
   }
 
@@ -557,8 +577,22 @@ function drawRunner(r, sx, y, s, time, dtReal){
   const boosted = r.effects.some(e => e.mult > 1), slowed = r.effects.some(e => e.mult < 1);
   ctx.save(); ctx.translate(sx, y);
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(-8*s, 0, 15*s, 3*s, 0, 0, 7); ctx.fill();
+  if(r.hitFx > 0){
+    r.hitFx = Math.max(0, r.hitFx - dtReal*1.8);
+    ctx.globalAlpha = r.hitFx; ctx.strokeStyle = '#ff5b4a'; ctx.lineWidth = 3*s;
+    ctx.beginPath(); ctx.arc(-4*s, -20*s, (1-r.hitFx)*34*s + 10*s, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  if(slowed && !r.finished){
+    // 어지럼 별
+    ctx.fillStyle = '#ffe36a';
+    for(let i=0;i<3;i++){ const a = time*5 + i*2.1, sx2 = -1*s + Math.cos(a)*14*s, sy2 = -46*s + Math.sin(a)*4*s; star(sx2, sy2, 3*s); }
+    // 뒤로 끌리는 빨간 선
+    ctx.strokeStyle = '#ff5b4a'; ctx.lineWidth = 2*s; ctx.globalAlpha = 0.6;
+    for(let i=0;i<3;i++){ const yy = -8*s - i*8*s, off = ((time*60 + i*9) % 14)*s; ctx.beginPath(); ctx.moveTo(6*s + off, yy); ctx.lineTo(16*s + off, yy); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+  }
   if(boosted){
-    ctx.strokeStyle = c.color; ctx.lineWidth = 2*s; ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = '#5fd18b'; ctx.lineWidth = 2*s; ctx.globalAlpha = 0.8;
     for(let i=0;i<4;i++){ const yy = -6*s - i*7*s, off = ((time*120 + i*13) % 20)*s; ctx.beginPath(); ctx.moveTo(-26*s - off, yy); ctx.lineTo(-44*s - off, yy); ctx.stroke(); }
     ctx.globalAlpha = 1;
   }
@@ -588,6 +622,7 @@ function drawRunner(r, sx, y, s, time, dtReal){
   ctx.fillStyle = '#fff'; ctx.fillText(c.name, -24*s, -13*s);
   ctx.restore();
 }
+function star(x, y, r){ ctx.beginPath(); for(let i=0;i<10;i++){ const a = -Math.PI/2 + i*Math.PI/5, rr = i%2 ? r*0.45 : r; ctx.lineTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr); } ctx.closePath(); ctx.fill(); }
 function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 
 /* ---------- 결승 연출 ----------
@@ -606,16 +641,8 @@ function updateDrama(dt){
       on = true; focus = unf.slice(0, 2); label = gap < 3 ? 'PHOTO FINISH' : '1착 결정';
     }
   } else {
-    const n = R.runners.length;
-    if(unf.length === 1){ focus = [unf[0], {x: D + 6}]; on = false; target = 1.6; } // 결승선을 화면에 같이 잡아둬요
-    else if(unf.length === 2 && (unf[0].x >= D - TRIGGER_M || R.finish.length >= n-2)){
-      const gap = unf[0].x - unf[1].x;
-      target = gap < 3 ? 0.18 : gap < 8 ? 0.3 : gap < 15 ? 0.45 : 0.65;
-      on = true; focus = unf; label = gap < 3 ? '꼴찌 결정전' : '마지막 둘';
-    } else if(R.finish.length >= 1 && unf.length > 2){
-      // 앞사람들은 빠르게 넘기고 뒤쪽을 보여줘요
-      target = 1.6; focus = unf.slice(-3);
-    }
+    // 꼴등 모드는 연출 없이 그대로 진행해요 (슬로우·줌 없음). 카메라만 아직 달리는 사람들을 따라가요.
+    target = 1; focus = R.finish.length ? unf : null;
   }
   const k = 1 - Math.pow(0.02, dt);
   R.slow += (target - R.slow) * k;
@@ -641,7 +668,8 @@ function frame(ts){
     $('#bTime').textContent = fmtT(R.t);
     // 아직 안 들어온 사람 중 맨 앞 기준 (선두가 골인하면 다음 사람으로 넘어가요)
     const refX = R.runners.filter(r => !r.finished).reduce((m,r)=>Math.max(m, r.x), 0);
-    $('#bLeft').textContent = `${Math.max(0, Math.round(D - refX))}m`;
+    const alive = R.runners.filter(r => !r.finished).length;
+    $('#bLeft').textContent = mode === 'last' && R.finish.length ? (alive ? `${alive}명 남음` : '꼴등 확정') : `${Math.max(0, Math.round(D - refX))}m`;
     // 결정 도장이 최소 2.4초는 보이게, 그 뒤 결과창
     if(R.doneAt !== null && R.t - R.doneAt > 0.6*TIME_SCALE && R.holdReal > 2.4) finishRace();
   }
@@ -738,13 +766,19 @@ function setMode(m){
   document.querySelectorAll('.seg [data-mode]').forEach(x => x.setAttribute('aria-pressed', x.dataset.mode === m));
 }
 document.querySelectorAll('.seg [data-mode]').forEach(b => b.addEventListener('click', () => { setMode(b.dataset.mode); if(R && R.phase === 'ready') setupRace(true); }));
-$('#btnStart').addEventListener('click', () => { if(R && R.phase === 'done') setupRace(false); startRace(); });
+$('#btnStart').addEventListener('click', () => {
+  if(R && R.phase === 'done') setupRace(false);
+  if(!document.body.classList.contains('fs')) toggleFs(); // 출발하면 바로 전체 화면
+  startRace();
+});
 $('#btnSkip').addEventListener('click', skipToEnd);
 $('#btnFs').addEventListener('click', toggleFs);
 document.addEventListener('keydown', e => {
   if(e.target.matches('input,textarea,select')) return;
   if(e.key === 'f' || e.key === 'F') toggleFs();
+  if(e.key === 'Escape' && document.body.classList.contains('fs')){ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); setFs(false); }
   if(e.key === ' ' && !$('#btnStart').disabled){ e.preventDefault(); $('#btnStart').click(); }
+  if((e.key === 'r' || e.key === 'R') && !$('#btnReroll').disabled) $('#btnReroll').click();
 });
 
 /* ---------- 이름 한 번에 넣기 ---------- */

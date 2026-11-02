@@ -36,7 +36,7 @@
           <button data-sp="1" aria-pressed="true">x1</button><button data-sp="2" aria-pressed="false">x2</button><button data-sp="4" aria-pressed="false">x4</button>
         </div>
         <button class="btn" id="btnSkip" disabled>결과 보기</button>
-        <button class="btn" id="btnReroll">스킬 재추첨</button>
+        <button class="btn" id="btnReroll" title="단축키 R">순서 섞기</button>
         <button class="btn" id="btnFs" title="단축키 F">⛶ 전체 화면</button>
         <button class="btn go" id="btnStart">출발!</button>
       </div>
@@ -54,7 +54,7 @@
 
     <aside class="side">
       <h2 id="sideTitle">출주표</h2>
-      <div class="sub" id="sideSub">이번 레이스에 뽑힌 스킬이에요</div>
+      <div class="sub" id="sideSub">스킬은 비공개예요. 달리면서 터질 때 보여요.</div>
       <ol id="board"></ol>
     </aside>
   </div>
@@ -79,7 +79,7 @@
 
   <details class="rules">
     <summary>공정한가요? 규칙과 스킬 목록</summary>
-    <p>모든 친구는 능력치가 똑같고, 같은 2000m 코스를 달려요. 레이스 시작 전에 각자 스킬 3개를 같은 확률로 무작위로 뽑아요(불운 스킬도 섞여 있어요). 달리는 동안에는 저마다 페이스가 오르내려서 순위가 계속 바뀌고, 뒤처진 사람에게는 관중 응원 보정이 조금 붙어요. 레이스당 많아야 한 번, 뒤쪽 절반 중 한 명에게 <b>역전각</b>이 터질 수 있어요(약 35%). 누구에게 터질지는 그때 추첨이라 특정 사람이 유리하지 않아요.</p>
+    <p>모든 친구는 능력치가 똑같고, 같은 2000m 코스를 달려요. 레이스 시작 전에 각자 스킬 3개를 같은 확률로 무작위로 뽑는데, 누가 뭘 뽑았는지는 비공개예요(불운 스킬도 섞여 있어요). 달리는 동안에는 저마다 페이스가 오르내려서 순위가 계속 바뀌고, 뒤처진 사람에게는 관중 응원 보정이 조금 붙어요. 레이스당 많아야 한 번, 뒤쪽 절반 중 한 명에게 <b>역전각</b>이 터질 수 있어요(약 35%). 누구에게 터질지는 그때 추첨이라 특정 사람이 유리하지 않아요.</p>
     <div class="pool" id="pool"></div>
   </details>
 </div>
