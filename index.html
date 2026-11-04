@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>친구무스메 더비</title>
+<title>프렌드더비 — 친구들과 하는 운빨 경마 룰렛</title>
+<meta name="description" content="프렌드더비: 친구 이름을 넣고 구경만 하면 되는 경마 룰렛. 모두 같은 능력치, 결과는 순수하게 운. 마블룰렛 대신 1등·꼴등 뽑기에 쓰세요.">
+<meta property="og:title" content="프렌드더비">
+<meta property="og:description" content="친구 이름을 넣고 구경만 하면 되는 경마 룰렛. 1등·꼴등 뽑기, 벌칙 뽑기에.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Share+Tech+Mono&display=swap">
@@ -14,8 +18,8 @@
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>친구무스메 <em>더비</em></h1>
-      <p>모두 같은 능력치로 2000m를 달려요. 스킬은 매 레이스 추첨이고, 결과는 순수하게 운이에요.</p>
+      <h1>프렌드<em>더비</em></h1>
+      <p>모두 같은 능력치로 2000m를 달려요. 스킬은 매 레이스 추첨이고, 결과는 순수하게 운이에요. <button class="btn tour-btn" id="btnTour" title="튜토리얼 다시 보기">? 사용법</button></p>
     </div>
     <div class="board" aria-label="전광판">
       <div class="cell"><div class="k">RACE</div><div class="v title" id="bRace">-</div></div>
@@ -119,6 +123,7 @@
 </div>
 
 <script src="js/game.js"></script>
+<script src="js/tour.js"></script>
 
 </body>
 </html>

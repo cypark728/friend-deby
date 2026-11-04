@@ -820,6 +820,14 @@ window.__fdFairness = (runs = 500) => {
   R = keep; return {wins, lasts, avgLeadChanges: leadCh/runs, lastAtHalfStaysLast: lastStaysLast/runs, winnerFromBottomHalfAtHalf: winnerFromBottomHalf/runs};
 };
 
+// 튜토리얼이 넣은 예시 이름은 끝나면 지워요
+document.addEventListener('fd:tour-end', () => {
+  const before = roster.length;
+  roster = roster.filter(c => !/^튜토리얼[AB]$/.test(c.name));
+  if(roster.length !== before){ saveRoster(); renderCards(); if(idle()) setupRace(false); }
+  $('#quickNames').value = '';
+});
+
 setMode(mode);
 renderCards();
 setupRace(false);
